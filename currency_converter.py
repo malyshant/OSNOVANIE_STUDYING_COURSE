@@ -78,4 +78,5 @@ btn_get_rate = tk.Button(
 )
 btn_get_rate.pack(pady=10)
 
+
 window.mainloop()
