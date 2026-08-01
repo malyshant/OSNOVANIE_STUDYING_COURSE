@@ -1,34 +1,55 @@
 import tkinter as tk
 import requests
 
+# Список монет
+CRYPTO_IDS = "bitcoin,ethereum,solana,binancecoin,ripple"
 
-# Функция для получения цены Bitcoin с CoinGecko
-def get_bitcoin_price():
-    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+
+def update_prices():
+    # Запрашиваем цены сразу для всех монет
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={CRYPTO_IDS}&vs_currencies=usd"
     response = requests.get(url)
     data = response.json()
 
-    # Достаем цену биткоина из словаря
-    price = data['bitcoin']['usd']
-    price_label.config(text=f"Bitcoin: ${price}")
+    # Обновляем текст в метках
+    labels_dict['bitcoin'].config(text=f"${data['bitcoin']['usd']:.2f}")
+    labels_dict['ethereum'].config(text=f"${data['ethereum']['usd']:.2f}")
+    labels_dict['solana'].config(text=f"${data['solana']['usd']:.2f}")
+    labels_dict['binancecoin'].config(text=f"${data['binancecoin']['usd']:.2f}")
+    labels_dict['ripple'].config(text=f"${data['ripple']['usd']:.4f}")
 
 
-# Создаем главное окно
 root = tk.Tk()
-root.title("Курс Криптовалют v1")
-root.geometry("300x200")
+root.title("Мониторинг криптовалют")
+root.geometry("360x320")
 
-# Заголовок
-title = tk.Label(root, text="Крипто-трекер", font=("Arial", 14))
-title.pack(pady=10)
+# Шапка
+tk.Label(root, text="Курсы криптовалют (USD)", font=("Arial", 14, "bold")).pack(pady=10)
 
-# Метка для вывода курса
-price_label = tk.Label(root, text="Нажмите кнопку для загрузки", font=("Arial", 11))
-price_label.pack(pady=10)
+# Фрейм для сетки монет
+frame = tk.Frame(root)
+frame.pack(pady=10)
 
-# Кнопка обновления
-btn_update = tk.Button(root, text="Запросить курс BTC", command=get_bitcoin_price)
-btn_update.pack(pady=10)
+# Красивые названия монет
+coins = [
+    ("Bitcoin (BTC)", "bitcoin"),
+    ("Ethereum (ETH)", "ethereum"),
+    ("Solana (SOL)", "solana"),
+    ("Binance Coin (BNB)", "binancecoin"),
+    ("Ripple (XRP)", "ripple")
+]
 
-# Запуск приложения
+labels_dict = {}
+
+# Выводим монеты строками
+for i, (name, coin_id) in enumerate(coins):
+    tk.Label(frame, text=name, font=("Arial", 11), anchor="w", width=18).grid(row=i, column=0, padx=5, pady=3)
+    val_label = tk.Label(frame, text="---", font=("Arial", 11, "bold"), width=12)
+    val_label.grid(row=i, column=1, padx=5, pady=3)
+    labels_dict[coin_id] = val_label
+
+# Кнопка для обновления
+btn_update = tk.Button(root, text="Обновить курсы", font=("Arial", 10), command=update_prices)
+btn_update.pack(pady=15)
+
 root.mainloop()
