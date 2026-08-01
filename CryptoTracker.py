@@ -1,36 +1,51 @@
 import tkinter as tk
 import requests
+from datetime import datetime
 
-# Список монет
+# Настройки API
 CRYPTO_IDS = "bitcoin,ethereum,solana,binancecoin,ripple"
+API_URL = f"https://api.coingecko.com/api/v3/simple/price?ids={CRYPTO_IDS}&vs_currencies=usd"
 
 
 def update_prices():
-    # Запрашиваем цены сразу для всех монет
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={CRYPTO_IDS}&vs_currencies=usd"
-    response = requests.get(url)
-    data = response.json()
+    status_label.config(text="Загрузка данных...", fg="gray")
+    root.update()
 
-    # Обновляем текст в метках
-    labels_dict['bitcoin'].config(text=f"${data['bitcoin']['usd']:.2f}")
-    labels_dict['ethereum'].config(text=f"${data['ethereum']['usd']:.2f}")
-    labels_dict['solana'].config(text=f"${data['solana']['usd']:.2f}")
-    labels_dict['binancecoin'].config(text=f"${data['binancecoin']['usd']:.2f}")
-    labels_dict['ripple'].config(text=f"${data['ripple']['usd']:.4f}")
+    try:
+        # Указываем timeout, чтобы программа не зависала при плохом интернете
+        response = requests.get(API_URL, timeout=5)
+        response.raise_for_status()  # Проверка статуса ответа (200 OK)
+        data = response.json()
+
+        # Обновляем значения в виджетах
+        for coin_id, label in labels_dict.items():
+            if coin_id in data:
+                price = data[coin_id]['usd']
+                # Форматируем вывод с запятыми в тысячах
+                label.config(text=f"${price:,.2f}")
+
+        # Фиксируем время последнего успешного обновления
+        current_time = datetime.now().strftime("%H:%M:%S")
+        status_label.config(text=f"Успешно обновлено в {current_time}", fg="green")
+
+    except requests.exceptions.RequestException:
+        # Если нет интернета или ошибка сервера
+        status_label.config(text="Ошибка подключения к API!", fg="red")
 
 
+# Главное окно
 root = tk.Tk()
-root.title("Мониторинг криптовалют")
-root.geometry("360x320")
+root.title("Crypto Tracker v1.0")
+root.geometry("380x360")
+root.resizable(False, False)
 
-# Шапка
-tk.Label(root, text="Курсы криптовалют (USD)", font=("Arial", 14, "bold")).pack(pady=10)
+# Заголовок
+tk.Label(root, text="Курсы криптовалют к USD", font=("Arial", 14, "bold")).pack(pady=12)
 
-# Фрейм для сетки монет
-frame = tk.Frame(root)
-frame.pack(pady=10)
+# Таблица монет
+frame = tk.Frame(root, relief="groove", bd=1)
+frame.pack(pady=5, padx=15, fill="x")
 
-# Красивые названия монет
 coins = [
     ("Bitcoin (BTC)", "bitcoin"),
     ("Ethereum (ETH)", "ethereum"),
@@ -41,15 +56,21 @@ coins = [
 
 labels_dict = {}
 
-# Выводим монеты строками
 for i, (name, coin_id) in enumerate(coins):
-    tk.Label(frame, text=name, font=("Arial", 11), anchor="w", width=18).grid(row=i, column=0, padx=5, pady=3)
-    val_label = tk.Label(frame, text="---", font=("Arial", 11, "bold"), width=12)
-    val_label.grid(row=i, column=1, padx=5, pady=3)
+    tk.Label(frame, text=name, font=("Arial", 10), anchor="w").grid(row=i, column=0, padx=15, pady=6, sticky="w")
+    val_label = tk.Label(frame, text="$0.00", font=("Arial", 10, "bold"))
+    val_label.grid(row=i, column=1, padx=15, pady=6, sticky="e")
     labels_dict[coin_id] = val_label
 
-# Кнопка для обновления
-btn_update = tk.Button(root, text="Обновить курсы", font=("Arial", 10), command=update_prices)
-btn_update.pack(pady=15)
+# Кнопка запроса
+btn_update = tk.Button(root, text="Обновить курсы", font=("Arial", 10, "bold"), bg="#e1e1e1", command=update_prices)
+btn_update.pack(pady=12)
+
+# Метка статуса
+status_label = tk.Label(root, text="Нажмите кнопку для загрузки", font=("Arial", 9), fg="gray")
+status_label.pack()
+
+# Автоматически загружаем курсы при запуске
+update_prices()
 
 root.mainloop()
